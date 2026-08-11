@@ -953,6 +953,7 @@
     transform:translateY(0);
   }
 </style>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -1219,11 +1220,11 @@
         <div class="method">Zelle</div>
         <div class="detail">
           <span class="detail-label">Correo</span>
-          <span class="detail-value" id="zelleEmail">[correo Zelle]<button type="button" class="copy-btn" data-copy="zelleEmail">Copiar</button></span>
+          <span class="detail-value" id="zelleEmail">Colinar577@gmail.com<button type="button" class="copy-btn" data-copy="zelleEmail">Copiar</button></span>
         </div>
         <div class="detail">
           <span class="detail-label">Nombre</span>
-          <span class="detail-value">[Nombre del titular]</span>
+          <span class="detail-value">Rafael Maray</span>
         </div>
       </div>
 
@@ -1231,27 +1232,15 @@
         <div class="method">Pago Móvil</div>
         <div class="detail">
           <span class="detail-label">Banco</span>
-          <span class="detail-value">[Nombre del banco]</span>
+          <span class="detail-value">Banco Caribe</span>
         </div>
         <div class="detail">
           <span class="detail-label">Cédula</span>
-          <span class="detail-value" id="pmCedula">[V-...]<button type="button" class="copy-btn" data-copy="pmCedula">Copiar</button></span>
+          <span class="detail-value" id="pmCedula">9440590<button type="button" class="copy-btn" data-copy="pmCedula">Copiar</button></span>
         </div>
         <div class="detail">
           <span class="detail-label">Teléfono</span>
-          <span class="detail-value" id="pmPhone">[0424-...]<button type="button" class="copy-btn" data-copy="pmPhone">Copiar</button></span>
-        </div>
-      </div>
-
-      <div class="gift-account">
-        <div class="method">Binance</div>
-        <div class="detail">
-          <span class="detail-label">Pay ID / Email</span>
-          <span class="detail-value" id="binanceId">[correo o Pay ID]<button type="button" class="copy-btn" data-copy="binanceId">Copiar</button></span>
-        </div>
-        <div class="detail">
-          <span class="detail-label">Red preferida</span>
-          <span class="detail-value">USDT — BSC / TRC20</span>
+          <span class="detail-value" id="pmPhone">04128457300<button type="button" class="copy-btn" data-copy="pmPhone">Copiar</button></span>
         </div>
       </div>
     </div>
@@ -1281,6 +1270,69 @@
 <footer>María Andreína &amp; Rafael Octavio · 11 de Septiembre de 2026 · San Diego</footer>
 
 <script>
+  // ---- EmailJS setup ----
+  (function(){
+    emailjs.init({ publicKey: "49_XuGZIV5yTFZNnQ" });
+  })();
+  const EMAILJS_SERVICE_ID = "service_wqholdr";
+  const EMAILJS_TEMPLATE_ID = "template_8satmcu";
+
+  function buildEmailContent(attending, nombre){
+    if(attending === 'presencial'){
+      return {
+        subject: "¡Gracias por confirmar tu asistencia! 💍",
+        message:
+`Hola ${nombre},
+
+¡Qué alegría que nos acompañes! Tu confirmación quedó registrada.
+
+📅 Viernes, 11 de septiembre de 2026
+📍 San Diego
+👗 Código de vestimenta: Casual elegante (el blanco está reservado para la novia)
+
+Con todo cariño,
+María Andreína & Rafael Octavio`
+      };
+    } else if(attending === 'online'){
+      return {
+        subject: "¡Nos verás en vivo! 💍",
+        message:
+`Hola ${nombre},
+
+Gracias por confirmar que nos acompañarás desde la distancia. Aquí está tu acceso a la transmisión:
+
+🔗 Google Meet: https://meet.google.com/szs-jjth-gzd
+📅 Viernes, 11 de septiembre · 11:00 AM – 12:30 PM
+🌎 Zona horaria: America/New York
+
+Te esperamos unos minutos antes del inicio.
+
+Con todo cariño,
+María Andreína & Rafael Octavio`
+      };
+    } else {
+      return {
+        subject: "Gracias por avisarnos",
+        message:
+`Hola ${nombre},
+
+Lamentamos que no puedas acompañarnos el 11 de septiembre, pero agradecemos mucho que te tomaras el tiempo de responder.
+
+Con cariño,
+María Andreína & Rafael Octavio`
+      };
+    }
+  }
+
+  function sendConfirmationEmail(toEmail, attending, nombre){
+    const content = buildEmailContent(attending, nombre);
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail,
+      subject: content.subject,
+      message: content.message
+    });
+  }
+
   // ---- Wax seal opening sequence + music ----
   const overlay = document.getElementById('openOverlay');
   const waxSeal = document.getElementById('waxSeal');
@@ -1451,6 +1503,7 @@
 
     const entry = {
       nombre, apellido, correo,
+      email: correo,
       asistencia: attending,
       acompanantes: attending === 'presencial' ? Number(companions) : 0,
       timestamp: new Date().toISOString(),
@@ -1472,6 +1525,12 @@
       if(!response.ok){
         throw new Error('No se pudo guardar la confirmación.');
       }
+
+      // Enviar correo de confirmación automático (no bloquea la UI si falla)
+      sendConfirmationEmail(correo, attending, nombre).catch((emailErr) => {
+        console.error('EmailJS error:', emailErr);
+      });
+
       form.style.display = 'none';
       const panel = document.getElementById('confirmPanel');
       panel.style.display = 'block';
@@ -1480,13 +1539,15 @@
         document.getElementById('confirmText').textContent = 'Lamentamos que no puedas acompañarnos, ¡gracias por tomarte el tiempo de responder!';
       } else if(attending === 'online'){
         document.getElementById('confirmTitle').textContent = '¡Nos verás en vivo!';
-        document.getElementById('confirmText').textContent = 'Tu respuesta quedó registrada. Abajo encontrarás el enlace de la transmisión, y te enviaremos el evento a tu calendario por correo.';
+        document.getElementById('confirmText').textContent = 'Tu respuesta quedó registrada. Abajo encontrarás el enlace de la transmisión, y también te lo enviamos a tu correo.';
         // Mostrar la sección de livestream y bajar hasta ella
         const livestreamSection = document.getElementById('livestreamSection');
         livestreamSection.classList.add('show');
         setTimeout(() => {
           livestreamSection.scrollIntoView({ behavior:'smooth', block:'start' });
         }, 600);
+      } else {
+        document.getElementById('confirmText').textContent = 'Tu respuesta quedó registrada. Te enviamos un correo con los detalles del evento.';
       }
     }catch(err){
       formMsg.textContent = 'Hubo un problema guardando tu confirmación. Intenta de nuevo.';
